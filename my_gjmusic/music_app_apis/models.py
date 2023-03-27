@@ -4,17 +4,33 @@ from django.db import models
 
 # By Vicky
 # class Person(models.Model):
-#     first_name = models.CharField(max_length=30)
-#     last_name = models.CharField(max_length=30)
+#first_name = models.CharField(max_length=30)
+#last_name = models.CharField(max_length=30)
 
+class UserInfo(models.Model):
+    user_id = models.CharField(max_length=255, primary_key=True)
+    phone_number = models.IntegerField()
+    name = models.CharField(max_length=255)
 
-class Destination(models.Model):
-    name = models.CharField(max_length= 100)
-    # img = models.ImageField(upload_to='pics')
-    desc = models.TextField()
-    price = models.IntegerField()
-    offer = models.BooleanField(default= False)
+class AllSongs(models.Model):
+    song_name = models.CharField(max_length=255)
+    song_id = models.CharField(max_length=255, primary_key=True)
+    genre = models.CharField(max_length=255)
+    artists = models.CharField(max_length=255)
+    album = models.CharField(max_length=255)
+    overall_song_rating = models.FloatField()
 
-class Person(models.Model):
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+class SongRating(models.Model):
+    user_id = models.ForeignKey(UserInfo, on_delete=models.CASCADE)
+    song_id = models.ForeignKey(AllSongs, on_delete=models.CASCADE)
+    song_rating = models.IntegerField()
+
+class Playlist(models.Model):
+    user_id = models.ForeignKey(UserInfo, on_delete=models.CASCADE)
+    song_id = models.ForeignKey(AllSongs, on_delete=models.CASCADE)
+    playlist_name = models.CharField(max_length=255)
+
+class Recommendation(models.Model):
+    recommended_user_id = models.CharField(max_length=255)
+    recommendation_to = models.CharField(max_length=255)
+    song_id = models.ForeignKey(AllSongs, on_delete=models.CASCADE)

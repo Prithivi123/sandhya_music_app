@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # 'rest_api_framework',
+
+    'rest_framework',
     'music_app_apis'
 ]
 
@@ -82,7 +83,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'postgres',
         'USER': 'prithivi',
-        'PASSWORD': 'Prithivi@12',
+        'PASSWORD': 'Jaya@12',
         'HOST': 'localhost',
         'PORT': '5432'
     }
