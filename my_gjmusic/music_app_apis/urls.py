@@ -9,5 +9,7 @@ from django.urls import re_path as url
 urlpatterns = [
     # path('person', views.person_details),
     # path('product_details_es', views.product_details_es)
-    path('upload_song', views.upload_songs)
+    path('upload_song', views.upload_songs),
+    path('get_all_songs', views.get_all_songs),
+    path('login', views.login_user)
 ]

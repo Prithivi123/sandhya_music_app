@@ -9,7 +9,7 @@ from django.db import models
 
 class UserInfo(models.Model):
     user_id = models.CharField(max_length=255, primary_key=True)
-    phone_number = models.IntegerField()
+    phone_number = models.BigIntegerField()
     name = models.CharField(max_length=255)
 
 class AllSongs(models.Model):
