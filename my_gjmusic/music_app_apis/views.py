@@ -17,7 +17,7 @@ def upload_songs(request):
     if request.method == 'PUT':
         song_info = json.loads(request.body)
 
-        mandatory_fields = ['song_name', 'artist_name', 'album_name', 'genre_name']
+        mandatory_fields = ['song_name', 'artists', 'album', 'genre']
         for i in mandatory_fields:
             if not i in song_info:
                 return JsonResponse({"message": f"{i} is a mandatory_field"}, status=400)
@@ -26,14 +26,17 @@ def upload_songs(request):
 
         if exsists_:
             return JsonResponse({"message": "This Song already exsists in the table"}, status=400)
+        song_info['overall_song_rating'] = 0.0
 
-        song_info['song_id'] = uuid.uuid4()
-        song_info['overall_song_rating'] = song_initial_rating = 0.0
-
-        
-        AllSongs.objects.create(song_name = song_info['song_name'], genre = song_info['genre_name'], artists = song_info['artist_name'], album = song_info['album_name'], song_id = song_info['song_id'], overall_song_rating= song_initial_rating)
-
-        return JsonResponse({"Message": "song information uploaded in the song table"}, status=200)
+        serialized_data = AllSongsSerializer(data=song_info)
+        if serialized_data.is_valid():
+            try:
+                AllSongsSerializer(serialized_data.save())
+                return JsonResponse({"Message": "song information uploaded in the song table"}, status=200)
+            except Exception as e:
+                return JsonResponse({"message": f"Unable to upload in the song table - {e}"}, status=500)
+        else:
+            return JsonResponse({"message": f"Invalid request payload"}, status=400)
 
 
 def get_all_songs(request):
@@ -69,6 +72,37 @@ def login_user(request):
         return JsonResponse({"Message": "Login successfully created"}, status=200)
             
         
+
+@csrf_exempt
+def playlists(request):
+    if request.method == 'PUT':
+        playlist_info = json.loads(request.body)
+
+        if "user_id" not in playlist_info:
+            return JsonResponse({"message": f"Login to create and share playlist", "sign_up": "http://127.0.0.1:8000/music/login"}, status=401)
+
+        mandatory_fields = ['playlist_name', 'song_id']
+        for i in mandatory_fields:
+            if not i in playlist_info:
+                return JsonResponse({"message": f"{i} is a mandatory_field"}, status=400)
+
+        serialized_data = PlaylistSerializer(data=playlist_info)
+        if serialized_data.is_valid():
+            if Playlist.objects.filter(song_id=playlist_info.get("song_id")).exists():
+                return JsonResponse({"message": "The song doesn't not exists"}, status=409)
+        
+            elif Playlist.objects.filter(user_id=playlist_info.get("user_id"), playlist_name=playlist_info.get("playlist_name"), song_id=playlist_info.get("song_id")).exists():
+                return JsonResponse({"message": "This Song already added in this playlist"}, status=409)
+        
+            try:
+                PlaylistSerializer(serialized_data.save())
+                return JsonResponse({"Message": "Song added to playlist"}, status=200)
+            except Exception as e:
+                return JsonResponse({"message": f"Unable to add song in playlist {e}"}, status=500)
+        else:
+            return JsonResponse({"message": f"Invalid request payload {serialized_data.errors}"}, status=400)
+        
+
 
 
 # @csrf_exempt

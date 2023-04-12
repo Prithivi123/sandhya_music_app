@@ -14,7 +14,7 @@ class UserInfo(models.Model):
 
 class AllSongs(models.Model):
     song_name = models.CharField(max_length=255)
-    song_id = models.CharField(max_length=255, primary_key=True)
+    song_id = models.AutoField(primary_key=True)
     genre = models.CharField(max_length=255)
     artists = models.CharField(max_length=255)
     album = models.CharField(max_length=255)

@@ -11,5 +11,6 @@ urlpatterns = [
     # path('product_details_es', views.product_details_es)
     path('upload_song', views.upload_songs),
     path('get_all_songs', views.get_all_songs),
-    path('login', views.login_user)
+    path('login', views.login_user),
+    path('playlist', views.playlists)
 ]
