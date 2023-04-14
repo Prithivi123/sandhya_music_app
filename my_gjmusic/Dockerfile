@@ -2,6 +2,7 @@ FROM python:3.10.8-slim-buster
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
+RUN apt update && apt install libpq-dev python3-dev gcc -y
 WORKDIR /first_docker_app
 COPY requirements.txt /first_docker_app/
 
