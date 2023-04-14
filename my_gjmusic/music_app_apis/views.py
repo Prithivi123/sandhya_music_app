@@ -193,12 +193,11 @@ def suggest_by_search(request):
 def recommended_for_you(request):
     if request.method == 'POST':
         user_id_ = json.loads(request.body)
-        user_id = user_id_.get('user_id')
 
-        if not user_id:
+        if not user_id_.get('user_id'):
             return JsonResponse({"message": "user_id is mandatory"}, status=400)
 
-        song_ids = Playlist.objects.filter(user_id=user_id).values_list('song_id', flat=True)
+        song_ids = Playlist.objects.filter(user_id=user_id_.get('user_id')).values_list('song_id', flat=True)
         song_info_list = AllSongs.objects.filter(song_id__in=song_ids)
 
         list_genre = set()
@@ -219,6 +218,38 @@ def recommended_for_you(request):
         return JsonResponse({"message": samples}, status=200)
 
 
+@csrf_exempt
+def give_song_rating(request):
+    if request.method == 'PUT':
+        song_rating_info = json.loads(request.body)
+
+        mandatory_fields = ['user_id', 'song_id', 'song_rating']
+
+        for i in mandatory_fields:
+            if not i in song_rating_info:
+                return JsonResponse({"message": f"{i} is a mandatory field"}, status=400)
+            
+        if song_rating_info['song_rating'] >5 or song_rating_info['song_rating'] < 1:
+            return JsonResponse({"message": "song_rating should be give between 1 to 5"}, status = 400)
+
+        try:
+            user = UserInfo.objects.get(user_id=song_rating_info['user_id'])
+        except UserInfo.DoesNotExist:
+            return JsonResponse({"message": "User does not exist"}, status=400)
+
+        try:
+            id = AllSongs.objects.get(song_id=song_rating_info['song_id'])
+        except AllSongs.DoesNotExist:
+            return JsonResponse({"message": "User does not exist"}, status=400)
+        
+        SongRating.objects.update_or_create(
+        user_id=user,
+        song_id=id,
+        defaults={"song_rating": song_rating_info['song_rating']}
+        )
+        return JsonResponse({"message": f"song rating given for the song_id:{song_rating_info['song_id']} is {song_rating_info['song_rating']}"}, status=200)
+
+        
 
 
     

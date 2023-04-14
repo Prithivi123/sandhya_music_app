@@ -15,5 +15,6 @@ urlpatterns = [
     path('playlist', views.update_playlist),
     path('recommend_to_friend', views.recommend_song_to_friend),
     path('suggest_by_search', views.suggest_by_search),
-    path('recommended_for_you', views.recommended_for_you)
+    path('recommended_for_you', views.recommended_for_you),
+    path('song_rating', views.give_song_rating)
 ]
