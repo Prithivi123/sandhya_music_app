@@ -29,8 +29,12 @@ class Playlist(models.Model):
     user_id = models.ForeignKey(UserInfo, on_delete=models.CASCADE)
     song_id = models.ForeignKey(AllSongs, on_delete=models.CASCADE)
     playlist_name = models.CharField(max_length=255)
+    date_added = models.DateTimeField(auto_now_add=True)
 
 class Recommendation(models.Model):
-    recommended_user_id = models.CharField(max_length=255)
-    recommendation_to = models.CharField(max_length=255)
+    user_id = models.ForeignKey(UserInfo, on_delete=models.CASCADE)
+    recommended_user_id =  models.CharField(max_length=255)
     song_id = models.ForeignKey(AllSongs, on_delete=models.CASCADE)
+    genre = models.CharField(max_length=255, null=True, blank=True)
+    artists = models.CharField(max_length=255, null=True, blank=True)
+    album = models.CharField(max_length=255, null=True, blank=True)

@@ -1,3 +1,4 @@
+import random
 from django.shortcuts import render
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
@@ -36,16 +37,20 @@ def upload_songs(request):
             except Exception as e:
                 return JsonResponse({"message": f"Unable to upload in the song table - {e}"}, status=500)
         else:
-            return JsonResponse({"message": f"Invalid request payload"}, status=400)
+            return JsonResponse({"message": f"Invalid request payload "}, status=400)
 
 
 def get_all_songs(request):
     if request.method == 'GET':
         params = request.GET.dict()
-        if params:
-            all_songs = AllSongs.objects.filter(**params)
-        else:
-            all_songs = AllSongs.objects.all()
+        try:
+            if params:
+                all_songs = AllSongs.objects.filter(**params)
+            else:
+                all_songs = AllSongs.objects.all()
+        except Exception as e:
+                return JsonResponse({"message": f"{e}"}, status=500)
+
         serializer = AllSongsSerializer(all_songs, many=True)
         return JsonResponse({"message": serializer.data}, status=200)
 
@@ -74,35 +79,149 @@ def login_user(request):
         
 
 @csrf_exempt
-def playlists(request):
-    if request.method == 'PUT':
-        playlist_info = json.loads(request.body)
+def update_playlist(request):
+    playlist_info = json.loads(request.body)
 
-        if "user_id" not in playlist_info:
-            return JsonResponse({"message": f"Login to create and share playlist", "sign_up": "http://127.0.0.1:8000/music/login"}, status=401)
+    if "user_id" not in playlist_info:
+        return JsonResponse({"message": f"Login to create and share playlist", "sign_up": "http://127.0.0.1:8000/music/login"}, status=401)
 
-        mandatory_fields = ['playlist_name', 'song_id']
-        for i in mandatory_fields:
-            if not i in playlist_info:
-                return JsonResponse({"message": f"{i} is a mandatory_field"}, status=400)
+    mandatory_fields = ['playlist_name', 'song_id']
+    for i in mandatory_fields:
+        if not i in playlist_info:
+            return JsonResponse({"message": f"{i} is a mandatory_field"}, status=400)
 
-        serialized_data = PlaylistSerializer(data=playlist_info)
-        if serialized_data.is_valid():
-            if Playlist.objects.filter(song_id=playlist_info.get("song_id")).exists():
-                return JsonResponse({"message": "The song doesn't not exists"}, status=409)
-        
-            elif Playlist.objects.filter(user_id=playlist_info.get("user_id"), playlist_name=playlist_info.get("playlist_name"), song_id=playlist_info.get("song_id")).exists():
+    serialized_data = PlaylistSerializer(data=playlist_info)
+
+    if serialized_data.is_valid():
+        if request.method == 'PUT': #PUT Method
+            if Playlist.objects.filter(user_id=playlist_info.get("user_id"), playlist_name=playlist_info.get("playlist_name"), song_id=playlist_info.get("song_id")).exists():
                 return JsonResponse({"message": "This Song already added in this playlist"}, status=409)
-        
+
             try:
                 PlaylistSerializer(serialized_data.save())
                 return JsonResponse({"Message": "Song added to playlist"}, status=200)
             except Exception as e:
                 return JsonResponse({"message": f"Unable to add song in playlist {e}"}, status=500)
+        elif request.method == 'DELETE': #DELETE Method
+            try:
+                if Playlist.objects.filter(user_id=playlist_info.get("user_id"), playlist_name=playlist_info.get("playlist_name"), song_id=playlist_info.get("song_id")).exists():
+                        Playlist.objects.filter(user_id=playlist_info.get("user_id"), song_id=playlist_info.get("song_id"), playlist_name=playlist_info.get("playlist_name")).delete()
+                        return JsonResponse({"message": "Song removed from playlist"}, status=204)
+                return JsonResponse({"message": "Song doesn't exists playlist"}, status=204)
+            except Exception as e:
+                return JsonResponse({"message": f"Unable to delete the testset - {e}"}, status=500)
+    else:
+        list_ = ['song_id', 'user_id']
+        if list(serialized_data.errors.keys())[0] in list_:
+            return JsonResponse({"message": f"{list(serialized_data.errors.keys())[0]} does not exisits"}, status=400)
+
+        return JsonResponse({"message": f"Invalid request payload"}, status=400)
+
+
+        
+@csrf_exempt
+def recommend_song_to_friend(request):
+    if request.method == 'POST':
+        song_info = json.loads(request.body)
+
+        mandatory_fields = ['song_id', 'genre', 'artists', 'album']
+
+        common_keys = set(song_info.keys()).intersection(set(mandatory_fields))
+        if not common_keys:
+            return JsonResponse({"message": f"atleat any of these field is required, {mandatory_fields}"}, status=400)
+        
+        if Recommendation.objects.filter(**song_info).exists():
+            return JsonResponse({"message": f"This song/ genre / artists / album is already been recommended to this user"}, status=409)
+        
+        if "recommended_user_id" not in song_info:
+            return JsonResponse({"message": f"recommended_user_id is required"}, status=401)
+        elif not UserInfo.objects.filter(user_id=song_info.get("recommended_user_id")).exists():
+            return JsonResponse({"message": f"recommended_user_id does not exist"}, status=401)
+
+        serialized_data = RecommendationSerializer(data=song_info)
+
+        if serialized_data.is_valid():
+            RecommendationSerializer(serialized_data.save())
+            return JsonResponse({"message": f"song recommended successfully to user: {song_info.get('recommended_user_id')}"}, status=200)
         else:
-            return JsonResponse({"message": f"Invalid request payload {serialized_data.errors}"}, status=400)
+            return JsonResponse({"message": serialized_data.errors})
+        
+    if request.method == 'GET':
+        if request.body:
+            song_info = json.loads(request.body)
+            try:
+                if song_info:
+                    recommended_details = Recommendation.objects.filter(**song_info)
+                else:
+                    recommended_details = Recommendation.objects.all()
+            except Exception as e:
+                    return JsonResponse({"message": f"{e}"}, status=500)
+
+            serializer = RecommendationSerializer(recommended_details, many=True)
+            return JsonResponse({"message": serializer.data}, status=200)
+        else:
+            try:
+                recommended_details = Recommendation.objects.all()
+            except Exception as e:
+                return JsonResponse({"message": f"{e}"}, status=500)
+
+            serializer = RecommendationSerializer(recommended_details, many=True)
+            return JsonResponse({"message": serializer.data}, status=200)
         
 
+
+
+
+def suggest_by_search(request):
+    if request.method == 'GET':
+        query = request.GET.get('q')
+        
+        if not query:
+            return JsonResponse({"message": "Please provide a search query"}, status=400)
+
+        songs = AllSongs.objects.filter(Q(song_name__icontains=query) | Q(genre__icontains=query) | Q(artists__icontains=query))
+
+        results = [{
+        'song_name': song.song_name,
+        'genre': song.genre,
+        'artists': song.artists
+        } for song in songs]
+
+        return JsonResponse({"results": results}, status=200)
+    
+@csrf_exempt
+def recommended_for_you(request):
+    if request.method == 'POST':
+        user_id_ = json.loads(request.body)
+        user_id = user_id_.get('user_id')
+
+        if not user_id:
+            return JsonResponse({"message": "user_id is mandatory"}, status=400)
+
+        song_ids = Playlist.objects.filter(user_id=user_id).values_list('song_id', flat=True)
+        song_info_list = AllSongs.objects.filter(song_id__in=song_ids)
+
+        list_genre = set()
+        list_artists = set()
+        list_album = set()
+
+        for song_detail in song_info_list:
+            list_genre.add(song_detail.genre)
+            list_artists.add(song_detail.artists)
+            list_album.add(song_detail.album)
+
+        song_info_list = AllSongs.objects.filter(genre__in=list_genre, artists__in=list_artists, album__in=list_album).exclude(song_id__in=song_ids)
+        serializer_song_info = AllSongsSerializer(song_info_list, many=True)
+
+        num_request = user_id_['num_request'] if user_id_.get('num_request') else 16
+        samples = random.sample(serializer_song_info.data, min(num_request, len(serializer_song_info.data)))
+
+        return JsonResponse({"message": samples}, status=200)
+
+
+
+
+    
 
 
 # @csrf_exempt

@@ -12,5 +12,8 @@ urlpatterns = [
     path('upload_song', views.upload_songs),
     path('get_all_songs', views.get_all_songs),
     path('login', views.login_user),
-    path('playlist', views.playlists)
+    path('playlist', views.update_playlist),
+    path('recommend_to_friend', views.recommend_song_to_friend),
+    path('suggest_by_search', views.suggest_by_search),
+    path('recommended_for_you', views.recommended_for_you)
 ]
