@@ -1,6 +1,6 @@
 import random
 from django.shortcuts import render
-from django.db.models import Q
+from django.db.models import Q, Sum, Count
 from django.http import HttpResponse, JsonResponse
 from .models import UserInfo, AllSongs, SongRating, Playlist, Recommendation
 from django.views.decorators.csrf import csrf_exempt
@@ -50,7 +50,8 @@ def get_all_songs(request):
                 all_songs = AllSongs.objects.all()
         except Exception as e:
                 return JsonResponse({"message": f"{e}"}, status=500)
-
+        
+        
         serializer = AllSongsSerializer(all_songs, many=True)
         return JsonResponse({"message": serializer.data}, status=200)
 
@@ -247,6 +248,14 @@ def give_song_rating(request):
         song_id=id,
         defaults={"song_rating": song_rating_info['song_rating']}
         )
+
+        result = SongRating.objects.filter(song_id=id).aggregate(Sum('song_rating'), Count('song_rating'))
+        sum_of_ratings = float(result['song_rating__sum']) if result['song_rating__sum'] else 0.0
+        
+        sum_of_ratings = sum_of_ratings/result['song_rating__count']
+
+        AllSongs.objects.filter(song_id=id.song_id).update(overall_song_rating=sum_of_ratings)
+        
         return JsonResponse({"message": f"song rating given for the song_id:{song_rating_info['song_id']} is {song_rating_info['song_rating']}"}, status=200)
 
         
